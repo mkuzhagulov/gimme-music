@@ -66,7 +66,7 @@ trait MessageTypes { this: BotBase[Future] =>
   def sendMusic(msg: Message, fileInfo: AudioInfo): Future[Message] = {
     val fixedTitle = fileInfo.title.replaceAll("[^\\w\\d\\t\\n\\v\\f\\rа-яА-Я ()-_]", "") match {
       case "" => s"Performing Artist #${Random.nextInt(100)} - ID"
-      case other => other
+      case other => translit.Russian.cyrillicToLatin(other)
     }
     val audio = SendAudio(
       msg.source,
