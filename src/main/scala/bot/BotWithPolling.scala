@@ -5,6 +5,7 @@ import com.bot4s.telegram.api.declarative.{Commands, Messages}
 import com.bot4s.telegram.future.Polling
 import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.Message
+import scala.util.{Try,Success,Failure}
 
 import scala.concurrent.Future
 import scala.util.Random
@@ -28,8 +29,11 @@ class BotWithPolling(token: String)
         case url@URIPattern() =>
           request(SendMessage(msg.source, randomPhrases(Random.nextInt(randomPhrases.length))))
 
-          val result = ExternalCommandUtils.obtainAudioProcess(url)
-          sendMusic(msg, AudioInfo(result._1, result._2))
+          Try(ExternalCommandUtils.obtainAudioProcess(url)) match {
+            case Success(res) => sendMusic(msg, AudioInfo(res._1, res._2))
+            case Failure(ex) => exceptionHandler(msg, ex)
+          }
+
         case _ => request(SendMessage(msg.source, "Некорректный URL"))
       }
     }

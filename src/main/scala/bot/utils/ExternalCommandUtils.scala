@@ -56,7 +56,7 @@ object ExternalCommandUtils {
       case Left(ex) => log.error(ex.getMessage); throw YoutubeDlError()
       case Right(value) => log.debug(value)
     }
-    log.info(s"Файл $title скачан успешно скачан чере youtoube-dl")
+    log.info(s"Файл $title успешно скачан чере youtoube-dl")
 
     val allFiles = getListOfFiles(downloadPath)
 
@@ -65,17 +65,28 @@ object ExternalCommandUtils {
       case xs :: _ => xs
     }
 
-    println(fileName)
+    log.info(fileName)
 
-    convertToMp3(fileName, title) match {
-      case Left(_) => log.error("Ошибка конвертации в mp3"); throw YoutubeDlError()
-      case Right(value) => log.debug(value)
+    val fileSize = Files.readAllBytes(Paths.get(s"$downloadPath/$fileName")).length
+
+    if (fileSize > FileSizeLimit) {
+      log.info(s"File '$fileName' too large. $fileSize bytes")
+      removeFile(s"$fileName")
+      throw FileTooLarge()
     }
 
-    val byteArray = Files.readAllBytes(Paths.get(s"$downloadPath/$title.mp3"))
+    val byteArray = if (fileName.endsWith("mp3")) Files.readAllBytes(Paths.get(s"$downloadPath/$fileName"))
+
+    else {
+      convertToMp3(fileName, title) match {
+        case Left(_) => log.error("Ошибка конвертации в mp3"); throw YoutubeDlError()
+        case Right(value) => log.debug(value)
+      }
+      Files.readAllBytes(Paths.get(s"$downloadPath/$title.mp3"))
+    }
+
     removeFile(s"$title.mp3")
 
-    if (byteArray.length > FileSizeLimit) throw FileTooLarge()
     (title, byteArray)
 
   }
